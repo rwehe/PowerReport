@@ -15,25 +15,32 @@ Import-Csv $compList |
         "Peak Power Reading (BTU/hrs)",`
         "Power Supply Current Draw (amps) 1",`
         "Power Supply Current Draw (amps) 2"
+
+        if (Test-Connection $_.Computer -ErrorAction SilentlyContinue){        
+            $chassis = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell")
+            $PowerConsumptionData = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell")
+            $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell")
+
+            $system."Computer Name" = (Get-WmiObject -ComputerName $_.Computer -Class Win32_ComputerSystem).Name
+
+            $system.Model = $chassis.Model
         
-        $chassis = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell")
-        $PowerConsumptionData = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell")
-        $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell")
+            $system."Serial Number" = $chassis.SerialNumber
+            $system."Energy Consumption (KWh)" = $PowerConsumptionData.cumulativePowerReading
+            $system."Instantaneous Headroom (watts)" = $PowerConsumptionData.instHeadRoom
+            $system."Peak Amperage Reading" = $PowerConsumptionData.peakAmpReading / 10
+            $system."Peak Headroom (watts)" = $PowerConsumptionData.peakHeadRoom
+            $system."Peak Power Reading (watts)" = $PowerConsumptionData.peakWattReading
+            $system."Peak Power Reading (BTU/hrs)" = $PowerConsumptionData.peakWattReading * 3.412
 
+            $system."Power Supply Current Draw (amps) 1" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -First 1) / 10
+            $system."Power Supply Current Draw (amps) 2" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -Last 1) / 10
+        }
 
-        $system."Computer Name" = hostname
-        $system.Model = $chassis.Model
-        
-        $system."Serial Number" = $chassis.SerialNumber
-        $system."Energy Consumption (KWh)" = $PowerConsumptionData.cumulativePowerReading
-        $system."Instantaneous Headroom (watts)" = $PowerConsumptionData.instHeadRoom
-        $system."Peak Amperage Reading" = $PowerConsumptionData.peakAmpReading / 10
-        $system."Peak Headroom (watts)" = $PowerConsumptionData.peakHeadRoom
-        $system."Peak Power Reading (watts)" = $PowerConsumptionData.peakWattReading
-        $system."Peak Power Reading (BTU/hrs)" = $PowerConsumptionData.peakWattReading * 3.412
-
-        $system."Power Supply Current Draw (amps) 1" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -First 1) / 10
-        $system."Power Supply Current Draw (amps) 2" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -Last 1) / 10
+        else {
+            $system."Computer Name" = "Attempted: " + $_.Computer
+            $system."Model" = "Lookup failed"
+        }
 
         $system
     } | Export-Csv $reportLocation
