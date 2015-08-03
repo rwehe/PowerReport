@@ -1,74 +1,39 @@
-﻿$fileLocation = "C:\Temp\remoteNames.txt"
+﻿$compList = "C:\temp\computers.csv"
 $reportLocation = "C:\Temp\powerTest.csv"
 
-
-function reportPowerInformation{
-#    Param (
-#        [string]$computerName
-#    )
-    $computerName = $env:COMPUTERNAME
-
-    $objects = [ordered]@{
-        "Computer Name" = hostname
-        # The following commands use Class "DELL_Chassis" and Namespace "ROOT\CIMV2\Dell"
-        "Model" = (Get-WmiObject -Class "DELL_Chassis" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").Model
-        "Serial Number" = (Get-WmiObject -Class "DELL_Chassis" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").SerialNumber    
-
-
-        # The following commands use Class "DELL_PowerConsumptionData" and Namespace "ROOT\CIMV2\Dell"
-        "Energy Consumption (KWh)" = (Get-WmiObject -Class "DELL_PowerConsumptionData" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").cumulativePowerReading
-        "Instantaneous Headroom (watts)" = (Get-WmiObject -Class "DELL_PowerConsumptionData" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").instHeadRoom
-        "Peak Amperage Reading" = (Get-WmiObject -Class "DELL_PowerConsumptionData" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").peakAmpReading / 10
-        "Peak Headroom (watts)" = (Get-WmiObject -Class "DELL_PowerConsumptionData" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").peakHeadRoom
-        "Peak Power Reading (watts)" = (Get-WmiObject -Class "DELL_PowerConsumptionData" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").peakWattReading
-        "Peak Power Reading (BTU/hrs)" = [math]::Round((Get-WmiObject -Class "DELL_PowerConsumptionData" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").peakWattReading * 3.412, 2)
-
-        # The following commands use Class "DELL_PowerConsumptionAmpsSensor" and Namespace "ROOT\CIMV2\Dell"
-        "Power Supply Current Draw (amps)" = (Get-WmiObject -Class "DELL_PowerConsumptionAmpsSensor" -ComputerName $computerName -Namespace "ROOT\CIMV2\Dell").CurrentReading / 10
+Import-Csv $compList |
+    foreach{
+        $system = "" | select `
+        "Computer Name",`
+        "Model",`
+        "Serial Number",`
+        "Energy Consumption (KWh)",`
+        "Instantaneous Headroom (watts)",`
+        "Peak Amperage Reading",`
+        "Peak Headroom (watts)",`
+        "Peak Power Reading (watts)",`
+        "Peak Power Reading (BTU/hrs)",`
+        "Power Supply Current Draw (amps) 1",`
+        "Power Supply Current Draw (amps) 2"
         
+        $chassis = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell")
+        $PowerConsumptionData = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell")
+        $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell")
 
-    } | %{New-Object psobject -Property $_}
-    return $objects
-}
 
-try
-{
-    $namesFile = Get-Content $fileLocation -ErrorAction Stop
-}
-catch [System.Management.Automation.ItemNotFoundException]{
-    Write-Host "Could not find a file located at $fileLocation`n" -BackgroundColor Black -ForegroundColor Red
-}
-catch{
-    write-host "`n`nCaught an exception:" -ForegroundColor Red
-    write-host "Exception Type: $($_.Exception.GetType().FullName)" -ForegroundColor Red
-    write-host "Exception Message: $($_.Exception.Message)" -ForegroundColor Red
-}
+        $system."Computer Name" = hostname
+        $system.Model = $chassis.Model
+        
+        $system."Serial Number" = $chassis.SerialNumber
+        $system."Energy Consumption (KWh)" = $PowerConsumptionData.cumulativePowerReading
+        $system."Instantaneous Headroom (watts)" = $PowerConsumptionData.instHeadRoom
+        $system."Peak Amperage Reading" = $PowerConsumptionData.peakAmpReading / 10
+        $system."Peak Headroom (watts)" = $PowerConsumptionData.peakHeadRoom
+        $system."Peak Power Reading (watts)" = $PowerConsumptionData.peakWattReading
+        $system."Peak Power Reading (BTU/hrs)" = $PowerConsumptionData.peakWattReading * 3.412
 
-#if ($namesFile){
-#    $counter = 0
-#
-#    foreach ($name in $namesFile){
-#        reportPowerInformation($name) | Export-Csv $reportLocation -NoTypeInformation -Force
-#    }
+        $system."Power Supply Current Draw (amps) 1" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -First 1) / 10
+        $system."Power Supply Current Draw (amps) 2" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -Last 1) / 10
 
-#    $namesFile | %{
-#        $counter++
-#        try{
-#            Set-Variable -Name "computer$counter" -Value $_
-#
-#            New-Object PSObject
-#
-#        }
-#        catch {
-#            Write-Host "`n`nCaught an exception:" -ForegroundColor Red
-#            Write-Host "Exception Type: $($_.Exception.GetType().FullName)" -ForegroundColor Red -BackgroundColor Black
-#        }
-#    }
-#}
-
-function generateReport{
-    # Variable for file location
-    #$FileLocation = "C:\powertest.csv"
-    reportPowerInformation | Export-Csv $reportLocation
-}
-generateReport
+        $system
+    } | Export-Csv $reportLocation
