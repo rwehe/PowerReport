@@ -1,11 +1,15 @@
 ﻿$compList = "C:\temp\computers.csv"
 $reportLocation = "C:\Temp\powerTest.csv"
 
+Write-Host "Reading from " $compList
+Write-Host "Reporting to " $reportLocation
+
 Import-Csv $compList |
     foreach{
         $system = "" | select `
         "Computer Name",`
         "Model",`
+        "Operating System",`
         "Serial Number",`
         "Energy Consumption (KWh)",`
         "Instantaneous Headroom (watts)",`
@@ -16,6 +20,7 @@ Import-Csv $compList |
         "Power Supply Current Draw (amps) 1",`
         "Power Supply Current Draw (amps) 2"
 
+        Write-Host "testing" $_.Computer
         if (Test-Connection $_.Computer -ErrorAction SilentlyContinue){        
             $chassis = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell")
             $PowerConsumptionData = (Get-WmiObject -ComputerName $_.Computer -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell")
@@ -24,6 +29,9 @@ Import-Csv $compList |
             $system."Computer Name" = (Get-WmiObject -ComputerName $_.Computer -Class Win32_ComputerSystem).Name
 
             $system.Model = $chassis.Model
+            $OS = ((Get-WmiObject -ComputerName $_.Computer Win32_OperatingSystem).Name)
+            # The OS variable set above includes the full install path which isn't needed in this case
+            $system."Operating System" = $OS.Substring(0,($OS.IndexOf("|"))) # Grabs the content before the | in the string
         
             $system."Serial Number" = $chassis.SerialNumber
             $system."Energy Consumption (KWh)" = $PowerConsumptionData.cumulativePowerReading
