@@ -4,8 +4,7 @@ $Global:reportLocation = "C:\Power Report.csv" # Set this variable to point to t
 
 function Get-PowerReport{
     param(
-        [string]$computerName,
-        [string]$reportLocation
+        [string]$computerName
     )
 
     Write-Host "working on: $computerName" -ForegroundColor Green -BackgroundColor Black
