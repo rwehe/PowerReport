@@ -25,9 +25,9 @@ function Get-PowerReport{
 
     if (Test-Connection $computerName -ErrorAction SilentlyContinue){ # Pings the host to verify reply
         try{
-            $chassis = (Get-WmiObject -ComputerName $computerName -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell" -ErrorAction Stop -ErrorVariable e)
-            $PowerConsumptionData = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell" -EA Stop)
-            $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell" -EA Stop)
+            $chassis = (Get-WmiObject -ComputerName $computerName -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell" -ErrorAction SilentlyContinue -ErrorVariable e)
+            $PowerConsumptionData = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell" -EA SilentlyContinue)
+            $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell" -EA SilentlyContinue)
 
         }
         catch [System.Management.ManagementException]{
@@ -35,34 +35,39 @@ function Get-PowerReport{
             $system."Computer Name" = "Attempted: $computerName"
             $system.Model = "Invalid namespace suspected"
         }
-        finally{
-            Write-Host "fin"
+        catch [System.UnauthorizedAccessException]{
+            Write-Host "Unauthorized Access Exception" -BackgroundColor Black -ForegroundColor Red
+            Write-Host "Did you use your 'a' account?" -BackgroundColor Black -ForegroundColor Yellow
         }
 
-#        $chassis = (Get-WmiObject -ComputerName $computerName -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell")
-#        $PowerConsumptionData = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell")
-#        $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell")
+#      Generic information about each machine that will report regardless
+#            $system."Computer Name" = (Get-WmiObject -ComputerName $computerName -Class Win32_ComputerSystem).Name
+#        I decided to change the computer name property to what was passed to the function instead of a query to the system's hostname (old line above)
+            $system."Computer Name" = $computerName
+            $OS = ((Get-WmiObject -ComputerName $computerName Win32_OperatingSystem).Name)
+    # The OS variable set above includes the full install path which isn't needed in this case
+            $system."Operating System" = $OS.Substring(0,($OS.IndexOf("|"))) # Grabs the content before the | in the string
 
-        $system."Computer Name" = (Get-WmiObject -ComputerName $computerName -Class Win32_ComputerSystem).Name
-
-        $system.Model = $chassis.Model
-        $OS = ((Get-WmiObject -ComputerName $computerName Win32_OperatingSystem).Name)
-        # The OS variable set above includes the full install path which isn't needed in this case
-        $system."Operating System" = $OS.Substring(0,($OS.IndexOf("|"))) # Grabs the content before the | in the string
-        
-        $system."Serial Number" = $chassis.SerialNumber
-        $system."Energy Consumption (KWh)" = $PowerConsumptionData.cumulativePowerReading
-        $system."Instantaneous Headroom (watts)" = $PowerConsumptionData.instHeadRoom
-        $system."Peak Amperage Reading" = $PowerConsumptionData.peakAmpReading / 10
-        $system."Peak Headroom (watts)" = $PowerConsumptionData.peakHeadRoom
-        $system."Peak Power Reading (watts)" = $PowerConsumptionData.peakWattReading
-        $system."Peak Power Reading (BTU/hrs)" = $PowerConsumptionData.peakWattReading * 3.412
-
-        $system."Power Supply Current Draw (amps) 1" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -First 1) / 10
-        $system."Power Supply Current Draw (amps) 2" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -Last 1) / 10
+        # 3 'if' statments, each will only run if the server has the class and the namespace
+        if($chassis){
+            $system.Model = $chassis.Model
+            $system."Serial Number" = $chassis.SerialNumber
+        } else {Write-Host "DELL_Chassis failed for $computerName" -ForegroundColor Red -BackgroundColor Gray}
+        if($PowerConsumptionData){
+            $system."Energy Consumption (KWh)" = $PowerConsumptionData.cumulativePowerReading
+            $system."Instantaneous Headroom (watts)" = $PowerConsumptionData.instHeadRoom
+            $system."Peak Amperage Reading" = $PowerConsumptionData.peakAmpReading / 10
+            $system."Peak Headroom (watts)" = $PowerConsumptionData.peakHeadRoom
+            $system."Peak Power Reading (watts)" = $PowerConsumptionData.peakWattReading
+            $system."Peak Power Reading (BTU/hrs)" = $PowerConsumptionData.peakWattReading * 3.412
+        } else {Write-Host "DELL_PowerConsumptionData failed for $computerName" -ForegroundColor Red -BackgroundColor Gray}
+        if($PowerConsumptionAmpsSensor){
+            $system."Power Supply Current Draw (amps) 1" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -First 1) / 10
+            $system."Power Supply Current Draw (amps) 2" = ($PowerConsumptionAmpsSensor.CurrentReading  | Select -Last 1) / 10            
+        } else {Write-Host "DELL_PowerConsumptionAmpsSensor failed for $computerName" -ForegroundColor Red -BackgroundColor Gray}
     }
-
     else{
+    # Connection to the host failed
         $system."Computer Name" = "Attempted: $computerName"
         $system."Model" = "Echo request packet failed"
         Write-Host "Ping to $computerName failed" -ForegroundColor Red
