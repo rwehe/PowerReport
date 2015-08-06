@@ -1,6 +1,7 @@
 ﻿$hostsPath = "C:\Temp\computers.csv" # Set this variable to point to the location of the CSV file with the hostnames
 $Global:reportLocation = "C:\Power Report.csv" # Set this variable to point to the location of the ouput of this script
 
+$cred = Get-Credential -Message "Cradentials to run script."
 
 function Get-PowerReport{
     param(
@@ -25,9 +26,9 @@ function Get-PowerReport{
 
     if (Test-Connection $computerName -ErrorAction SilentlyContinue){ # Pings the host to verify reply
         try{
-            $chassis = (Get-WmiObject -ComputerName $computerName -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell" -ErrorAction SilentlyContinue -ErrorVariable e)
-            $PowerConsumptionData = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell" -EA SilentlyContinue)
-            $PowerConsumptionAmpsSensor = (Get-WmiObject -ComputerName $computerName -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell" -EA SilentlyContinue)
+            $chassis = (Get-WmiObject -Credential $cred -ComputerName $computerName -Class "DELL_Chassis" -Namespace "ROOT\CIMV2\Dell" -ErrorAction SilentlyContinue -ErrorVariable e)
+            $PowerConsumptionData = (Get-WmiObject -Credential $cred -ComputerName $computerName -Class "DELL_PowerConsumptionData" -Namespace "ROOT\CIMV2\Dell" -EA SilentlyContinue)
+            $PowerConsumptionAmpsSensor = (Get-WmiObject -Credential $cred -ComputerName $computerName -Class "DELL_PowerConsumptionAmpsSensor" -Namespace "ROOT\CIMV2\Dell" -EA SilentlyContinue)
 
         }
         catch [System.Management.ManagementException]{
