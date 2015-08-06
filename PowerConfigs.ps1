@@ -51,6 +51,9 @@ function Get-PowerReport{
             Write-Host "Unauthorized Access Exception" -BackgroundColor Black -ForegroundColor Red
             Write-Host "Did you use your 'a' account?" -BackgroundColor Black -ForegroundColor Yellow
         }
+        catch {
+            Write-Host "Unknown error"
+        }
 
 #      Generic information about each machine that will report regardless
 #            $system."Computer Name" = (Get-WmiObject -ComputerName $computerName -Class Win32_ComputerSystem).Name
