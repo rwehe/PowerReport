@@ -88,7 +88,7 @@ function Get-PowerReport{
         Write-Host "Ping to $computerName failed" -ForegroundColor Red
     }
 
-    $system | Export-Csv $Global:reportLocation -Append
+    $system | Export-Csv $Global:reportLocation -Append -notypeinformation
     }
 
 # Attempts to read a CSV file located at $hostsPath
