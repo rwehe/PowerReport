@@ -1,4 +1,15 @@
-﻿$hostsPath = "C:\Temp\computers.csv" # Set this variable to point to the location of the CSV file with the hostnames
+﻿<#
+.Synopsis
+   This script reads a user populated CSV file containing hostnames and generates an output CSV file containing specific data about a server's power usage.
+.DESCRIPTION
+
+.EXAMPLE
+   ./PowerConfigs
+#>
+
+
+
+$hostsPath = "C:\Temp\computers.csv" # Set this variable to point to the location of the CSV file with the hostnames
 $Global:reportLocation = "C:\Power Report.csv" # Set this variable to point to the location of the ouput of this script
 
 $cred = Get-Credential -Message "Cradentials to run script."
@@ -45,7 +56,7 @@ function Get-PowerReport{
 #            $system."Computer Name" = (Get-WmiObject -ComputerName $computerName -Class Win32_ComputerSystem).Name
 #        I decided to change the computer name property to what was passed to the function instead of a query to the system's hostname (old line above)
             $system."Computer Name" = $computerName
-            $OS = ((Get-WmiObject -ComputerName $computerName Win32_OperatingSystem).Name)
+            $OS = ((Get-WmiObject -Credential $cred -ComputerName $computerName Win32_OperatingSystem).Name)
     # The OS variable set above includes the full install path which isn't needed in this case
             $system."Operating System" = $OS.Substring(0,($OS.IndexOf("|"))) # Grabs the content before the | in the string
 
