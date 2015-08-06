@@ -7,12 +7,12 @@
    ./PowerConfigs
 #>
 
-
-
 $hostsPath = "C:\Temp\computers.csv" # Set this variable to point to the location of the CSV file with the hostnames
-$Global:reportLocation = "C:\Power Report.csv" # Set this variable to point to the location of the ouput of this script
+$Global:reportLocation = "C:\Power Report.csv" # Set this variable to point to the location of the output of this script
 
-$cred = Get-Credential -Message "Cradentials to run script."
+$credInfo = Get-Credential -Message "Credentials to run script."
+$cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $credInfo.UserName, $credInfo.Password
+
 
 function Get-PowerReport{
     param(
@@ -60,7 +60,7 @@ function Get-PowerReport{
     # The OS variable set above includes the full install path which isn't needed in this case
             $system."Operating System" = $OS.Substring(0,($OS.IndexOf("|"))) # Grabs the content before the | in the string
 
-        # 3 'if' statments, each will only run if the server has the class and the namespace
+        # 3 'if' statements, each will only run if the server has the class and the namespace
         if($chassis){
             $system.Model = $chassis.Model
             $system."Serial Number" = $chassis.SerialNumber
@@ -97,7 +97,7 @@ catch [System.IO.FileNotFoundException]{
     Write-Host "Error was`n$e"
 }
 
-# If-Else to loop through the csv file and run each entry through the Get-PowerReport function
+# If-Else to loop through the CSV file and run each entry through the Get-PowerReport function
 if($hostsList){
     Write-Host "Reporting to $Global:reportLocation" -BackgroundColor Black -ForegroundColor DarkGreen
     Import-Csv $hostsPath | ForEach-Object{
