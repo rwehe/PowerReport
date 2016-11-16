@@ -11,45 +11,45 @@ $Global:PathDefault = $Path
 
 
 If (Test-Path "Folder_Permissions.csv"){
-    # Checks to see if there is a Folder_Permissions file in the directory from which the script was run, use by default if found.
+	# Checks to see if there is a Folder_Permissions file in the directory from which the script was run, use by default if found.
 	$global:csvPath = "$pwd"+"\Folder_Permissions.csv"
 }
 Else {$global:csvPath = $null}
 
 function RemoveNTFSPermissions($path, $permission, $accesstype, $object, $inhflag, $propflag ) {
-    $FileSystemRights = [System.Security.AccessControl.FileSystemRights]$permission
-    $AccessControlType =[System.Security.AccessControl.AccessControlType]::$accesstype
+	$FileSystemRights = [System.Security.AccessControl.FileSystemRights]$permission
+	$AccessControlType =[System.Security.AccessControl.AccessControlType]::$accesstype
 	$InheritanceFlag = [System.Security.AccessControl.InheritanceFlags]$inhflag
-    $PropagationFlag = [System.Security.AccessControl.PropagationFlags]$propflag	
-    $Account = New-Object System.Security.Principal.NTAccount($object)
-    $FileSystemAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($Account, $FileSystemRights, $InheritanceFlag, $PropagationFlag, $AccessControlType)
-    $DirectorySecurity = Get-ACL $path
-    $DirectorySecurity.RemoveAccessRuleAll($FileSystemAccessRule)
-    Set-ACL $path -AclObject $DirectorySecurity
+	$PropagationFlag = [System.Security.AccessControl.PropagationFlags]$propflag	
+	$Account = New-Object System.Security.Principal.NTAccount($object)
+	$FileSystemAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($Account, $FileSystemRights, $InheritanceFlag, $PropagationFlag, $AccessControlType)
+	$DirectorySecurity = Get-ACL $path
+	$DirectorySecurity.RemoveAccessRuleAll($FileSystemAccessRule)
+	Set-ACL $path -AclObject $DirectorySecurity
 }
 
 function RemoveNTFSPermissionsBasic($path, $object, $permission) {
-    $FileSystemRights = [System.Security.AccessControl.FileSystemRights]$permission
-    $InheritanceFlag = [System.Security.AccessControl.InheritanceFlags]"ContainerInherit, ObjectInherit"
-    $PropagationFlag = [System.Security.AccessControl.PropagationFlags]"None"
-    $AccessControlType =[System.Security.AccessControl.AccessControlType]::Allow
-    $Account = New-Object System.Security.Principal.NTAccount($object)
-    $FileSystemAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($Account, $FileSystemRights, $InheritanceFlag, $PropagationFlag, $AccessControlType)
-    $DirectorySecurity = Get-ACL $path
-    $DirectorySecurity.RemoveAccessRuleAll($FileSystemAccessRule)
-    Set-ACL $path -AclObject $DirectorySecurity
+	$FileSystemRights = [System.Security.AccessControl.FileSystemRights]$permission
+	$InheritanceFlag = [System.Security.AccessControl.InheritanceFlags]"ContainerInherit, ObjectInherit"
+	$PropagationFlag = [System.Security.AccessControl.PropagationFlags]"None"
+	$AccessControlType =[System.Security.AccessControl.AccessControlType]::Allow
+	$Account = New-Object System.Security.Principal.NTAccount($object)
+	$FileSystemAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($Account, $FileSystemRights, $InheritanceFlag, $PropagationFlag, $AccessControlType)
+	$DirectorySecurity = Get-ACL $path
+	$DirectorySecurity.RemoveAccessRuleAll($FileSystemAccessRule)
+	Set-ACL $path -AclObject $DirectorySecurity
 }
 
 function AddNTFSPermissions($path, $object, $permission) {
-    $FileSystemRights = [System.Security.AccessControl.FileSystemRights]$permission
+	$FileSystemRights = [System.Security.AccessControl.FileSystemRights]$permission
 	$InheritanceFlag = [System.Security.AccessControl.InheritanceFlags]"ContainerInherit, ObjectInherit"
-    $PropagationFlag = [System.Security.AccessControl.PropagationFlags]"None"
-    $AccessControlType =[System.Security.AccessControl.AccessControlType]::Allow
-    $Account = New-Object System.Security.Principal.NTAccount($object)
-    $FileSystemAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($Account, $FileSystemRights, $InheritanceFlag, $PropagationFlag, $AccessControlType)
-    $DirectorySecurity = Get-ACL $path
-    $DirectorySecurity.AddAccessRule($FileSystemAccessRule)
-    Set-ACL $path -AclObject $DirectorySecurity
+	$PropagationFlag = [System.Security.AccessControl.PropagationFlags]"None"
+	$AccessControlType =[System.Security.AccessControl.AccessControlType]::Allow
+	$Account = New-Object System.Security.Principal.NTAccount($object)
+	$FileSystemAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule($Account, $FileSystemRights, $InheritanceFlag, $PropagationFlag, $AccessControlType)
+	$DirectorySecurity = Get-ACL $path
+	$DirectorySecurity.AddAccessRule($FileSystemAccessRule)
+	Set-ACL $path -AclObject $DirectorySecurity
 }
 
 function ModifyPermissions{
@@ -109,10 +109,10 @@ function ModifyPermissions{
 function createPermissionsFile{
 	# Path to scan
 	If ($Global:path -eq $null){
-        $Global:Path = "E:\Fulton"
-    }
+		$Global:Path = "E:\Fulton"
+	}
 	
-    Write-Host "Analyzing:" $path -BackgroundColor Black -ForegroundColor DarkGreen
+	Write-Host "Analyzing:" $path -BackgroundColor Black -ForegroundColor DarkGreen
 
 	# How many child folders do you want to scan?
 	# 0 = Scan directorys only in the Path
@@ -154,16 +154,16 @@ Do {
 	Do{
 		If ($csvPath -ne $null){
 			Write-Host "`nThe current CSV file is: $csvPath" -ForegroundColor Black -BackgroundColor White
-            Write-Host "The target path is: $Path" -ForegroundColor Black -BackgroundColor White
+			Write-Host "The target path is: $Path" -ForegroundColor Black -BackgroundColor White
 			Write-Host "`nSelect your inquiry..." -ForegroundColor Yellow
 			Write-Host "`n1) Create a new CSV file" -ForegroundColor Green
-	        Write-Host "This option will overwrite the current CSV file with new permission data from: $path (Change this with option 3)`nThe CSV file will open after it has been created" -ForegroundColor Gray
-	        Write-Host "`n2) Modify permissions based on CSV file" -ForegroundColor Green
-	        Write-Host "This will check modify rows that have the flagged row set to TRUE or REMOVE" -ForegroundColor Gray
-            Write-Host "`n3) Change the default target directory" -ForegroundColor Green
-            Write-Host "This option allows you to change the target directory." -ForegroundColor Gray
-            If ($Path -ne $PathDefault){Write-Host "The default value is $PathDefault and the current setting is $Global:Path" -ForegroundColor Gray}
-            Else {Write-Host "Your current target path is set to the default: $Path" -ForegroundColor Gray}
+			Write-Host "This option will overwrite the current CSV file with new permission data from: $path (Change this with option 3)`nThe CSV file will open after it has been created" -ForegroundColor Gray
+			Write-Host "`n2) Modify permissions based on CSV file" -ForegroundColor Green
+			Write-Host "This will check modify rows that have the flagged row set to TRUE or REMOVE" -ForegroundColor Gray
+			Write-Host "`n3) Change the default target directory" -ForegroundColor Green
+			Write-Host "This option allows you to change the target directory." -ForegroundColor Gray
+			If ($Path -ne $PathDefault){Write-Host "The default value is $PathDefault and the current setting is $Global:Path" -ForegroundColor Gray}
+			Else {Write-Host "Your current target path is set to the default: $Path" -ForegroundColor Gray}
 
 			$select = Read-Host -Prompt "`nSelect 1, 2 or 3"
 			
@@ -176,39 +176,39 @@ Do {
 				ModifyPermissions
 				$Global:invalid = "False"
 			}
-            ElseIf ($select -eq '3'){
-                Clear-Host
-                Write-Host "The default target is $PathDefault"
+			ElseIf ($select -eq '3'){
+				Clear-Host
+				Write-Host "The default target is $PathDefault"
 
-                If ($Path -ne $PathDefault){
-                    Write-Host "1) Set back to default`n2) New target"
-                    $decision = Read-Host -Prompt "1 or 2"
-                }Else{$decision = 2}
+				If ($Path -ne $PathDefault){
+					Write-Host "1) Set back to default`n2) New target"
+					$decision = Read-Host -Prompt "1 or 2"
+				}Else{$decision = 2}
 
-                If($decision -eq '1'){
-                    $Global:Path = $PathDefault
-                    $Global:invalid = "False"
-                }
-                ElseIf($decision -eq '2'){
-                    $newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
-                    If ((Test-Path $newTarget) -eq $true){
-                        $Global:Path = $newTarget
-                        $Global:invalid = "False"
-                    }
-                    Else{
-                        Write-Host "Path was not found!" -ForegroundColor Red
-                        $Global:invalid = "True"
-                    }
-                }
-                Else{$Global:invalid = "True"}
-            }
+				If($decision -eq '1'){
+					$Global:Path = $PathDefault
+					$Global:invalid = "False"
+				}
+				ElseIf($decision -eq '2'){
+					$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
+					If ((Test-Path $newTarget) -eq $true){
+						$Global:Path = $newTarget
+						$Global:invalid = "False"
+					}
+					Else{
+						Write-Host "Path was not found!" -ForegroundColor Red
+						$Global:invalid = "True"
+					}
+				}
+				Else{$Global:invalid = "True"}
+			}
 			Else{
 				#Invalid Selection
-	            Clear-Host
-	            Write-Host "`nInvalid Selection" -ForegroundColor Red -BackgroundColor Yellow
-	            $Global:invalid = "True"
-	            PAUSE
-			    Clear-Host
+				Clear-Host
+				Write-Host "`nInvalid Selection" -ForegroundColor Red -BackgroundColor Yellow
+				$Global:invalid = "True"
+				PAUSE
+				Clear-Host
 			}
 		}
 		Else {
@@ -229,11 +229,11 @@ Do {
 		}
 	
 	}While ($invalid -eq "True")
-    Write-Host `n
-    PAUSE
+	Write-Host `n
+	PAUSE
 	# Clear-Host
-    # Prompt for Run Again
-    $runStart = Read-Host "`nRun Again? From Start (Y,N)?"
+	# Prompt for Run Again
+	$runStart = Read-Host "`nRun Again? From Start (Y,N)?"
 }While ($runStart -eq "Y")
 Clear-Host
 EXIT
