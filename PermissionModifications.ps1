@@ -6,7 +6,7 @@
 ############################################################
 
 # Default directory to be scanned by the script
-$Global:Path = "E:\Fulton"
+$Global:Path = "F:\Fulton"
 
 If (Test-Path $Path){
 	# The default path is valid
@@ -157,93 +157,114 @@ function createPermissionsFile{
 }
 
 #Prompt for user selection
-#Loop back here if runAgain -eq "y"
+#Loop back here if runStart -eq "y"
 Do {
 	Clear-Host
-	#Loop back here if $invalid -eq "True"
-	Do{
-		If ($csvPath -ne $null){
-			Write-Host "`nThe current CSV file is: $csvPath" -ForegroundColor Black -BackgroundColor White
-			Write-Host "The target path is: $Path" -ForegroundColor Black -BackgroundColor White
-			Write-Host "`nSelect your inquiry..." -ForegroundColor Yellow
-			Write-Host "`n1) Create a new CSV file" -ForegroundColor Green
-			Write-Host "This option will overwrite the current CSV file with new permission data from: $path (Change this with option 3)`nThe CSV file will open after it has been created" -ForegroundColor Gray
-			Write-Host "`n2) Modify permissions based on CSV file" -ForegroundColor Green
-			Write-Host "This will check modify rows that have the flagged row set to TRUE or REMOVE" -ForegroundColor Gray
-			Write-Host "`n3) Change the default target directory" -ForegroundColor Green
-			Write-Host "This option allows you to change the target directory." -ForegroundColor Gray
-			If ($Path -ne $PathDefault){Write-Host "The default value is $PathDefault and the current setting is $Global:Path" -ForegroundColor Gray}
-			Else {Write-Host "Your current target path is set to the default: $Path" -ForegroundColor Gray}
-
-			$select = Read-Host -Prompt "`nSelect 1, 2 or 3"
+	
+	If ($Path -ne $null){
+		If (Test-Path $Path){
 			
-			If ($select -eq '1'){
-				createPermissionsFile
-				Invoke-Item -Path .\$Filename.csv
-				$Global:invalid = "False"
-			}
-			ElseIf ($select -eq '2'){
-				ModifyPermissions
-				$Global:invalid = "False"
-			}
-			ElseIf ($select -eq '3'){
-				Clear-Host
-				Write-Host "The default target is $PathDefault"
 
-				If (($Path -ne $PathDefault) -and ($PathDefault -ne $null)){
-					Write-Host "1) Set back to default`n2) New target"
-					$decision = Read-Host -Prompt "1 or 2"
-				}Else{$decision = 2}
+			
+			
+			#Loop back here if $invalid -eq "True"
+			Do{
+				If ($csvPath -ne $null){
+					Write-Host "`nThe current CSV file is: $csvPath" -ForegroundColor Black -BackgroundColor White
+					Write-Host "The target path is: $Path" -ForegroundColor Black -BackgroundColor White
+					Write-Host "`nSelect your inquiry..." -ForegroundColor Yellow
+					Write-Host "`n1) Create a new CSV file" -ForegroundColor Green
+					Write-Host "This option will overwrite the current CSV file with new permission data from: $path (Change this with option 3)`nThe CSV file will open after it has been created" -ForegroundColor Gray
+					Write-Host "`n2) Modify permissions based on CSV file" -ForegroundColor Green
+					Write-Host "This will check modify rows that have the flagged row set to TRUE or REMOVE" -ForegroundColor Gray
+					Write-Host "`n3) Change the default target directory" -ForegroundColor Green
+					Write-Host "This option allows you to change the target directory." -ForegroundColor Gray
+					If ($Path -ne $PathDefault){Write-Host "The default value is $PathDefault and the current setting is $Global:Path" -ForegroundColor Gray}
+					Else {Write-Host "Your current target path is set to the default: $Path" -ForegroundColor Gray}
 
-				If($decision -eq '1'){
-					$Global:Path = $PathDefault
-					$Global:invalid = "False"
-				}
-				ElseIf($decision -eq '2'){
-					$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
-					If ((Test-Path $newTarget) -eq $true){
-						$Global:Path = $newTarget
+					$select = Read-Host -Prompt "`nSelect 1, 2 or 3"
+					
+					If ($select -eq '1'){
+						createPermissionsFile
+						Invoke-Item -Path .\$Filename.csv
 						$Global:invalid = "False"
 					}
+					ElseIf ($select -eq '2'){
+						ModifyPermissions
+						$Global:invalid = "False"
+					}
+					ElseIf ($select -eq '3'){
+						Clear-Host
+						Write-Host "The default target is $PathDefault"
+
+						If (($Path -ne $PathDefault) -and ($PathDefault -ne $null)){
+							Write-Host "1) Set back to default`n2) New target"
+							$decision = Read-Host -Prompt "1 or 2"
+						}Else{$decision = 2}
+
+						If($decision -eq '1'){
+							$Global:Path = $PathDefault
+							$Global:invalid = "False"
+						}
+						ElseIf($decision -eq '2'){
+							$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
+							If ((Test-Path $newTarget) -eq $true){
+								$Global:Path = $newTarget
+								$Global:invalid = "False"
+							}
+							Else{
+								Write-Host "Path was not found!" -ForegroundColor Red
+								$Global:invalid = "True"
+							}
+						}
+						Else{
+							$Global:invalid = "True"
+						}
+					}
 					Else{
-						Write-Host "Path was not found!" -ForegroundColor Red
+						#Invalid Selection
+						Clear-Host
+						Write-Host "`nInvalid Selection" -ForegroundColor Red -BackgroundColor Yellow
 						$Global:invalid = "True"
+						PAUSE
+						Clear-Host
 					}
 				}
-				Else{$Global:invalid = "True"}
+				Else {
+					# Can't find CSV file
+					Write-Host "`nCSV file can not be found" -ForegroundColor Red -BackgroundColor Yellow
+					Write-Host "CSV would be created in" $pwd
+					$newCSV = Read-Host "`nWould you like to create a new CSV file (Y,N)?"
+					If ($newCSV -eq "Y"){
+						createPermissionsFile
+						$Global:csvPath = "$pwd" + "\" + "$filename" + ".csv"			
+						$Global:invalid = "True"
+					}
+					Else{
+						$Global:invalid = "True"
+						PAUSE
+						Clear-Host
+					}
+				}
+			
+			}While ($invalid -eq "True")
+			Write-Host `n
+			PAUSE
+			# Clear-Host
+			# Prompt for Run Again
+			$runStart = Read-Host "`nRun Again? From Start (Y,N)?"
+	
 			}
 			Else{
-				#Invalid Selection
-				Clear-Host
-				Write-Host "`nInvalid Selection" -ForegroundColor Red -BackgroundColor Yellow
-				$Global:invalid = "True"
-				PAUSE
-				Clear-Host
+				$global:path = $null
 			}
-		}
-		Else {
-			# Can't find CSV file
-			Write-Host "`nCSV file can not be found" -ForegroundColor Red -BackgroundColor Yellow
-			Write-Host "CSV would be created in" $pwd
-			$newCSV = Read-Host "`nWould you like to create a new CSV file (Y,N)?"
-			if ($newCSV -eq "Y"){
-				createPermissionsFile
-				$Global:csvPath = "$pwd" + "\" + "$filename" + ".csv"			
-				$Global:invalid = "True"
-			}
-			else{
-				$Global:invalid = "True"
-				PAUSE
-				Clear-Host
-			}
-		}
+	}
+	Else{
+		Clear-Host
+		$global:path = Read-Host -Prompt "Enter a valid target path"
+		$global:runStart = "y"
+	}
 	
-	}While ($invalid -eq "True")
-	Write-Host `n
-	PAUSE
-	# Clear-Host
-	# Prompt for Run Again
-	$runStart = Read-Host "`nRun Again? From Start (Y,N)?"
 }While ($runStart -eq "Y")
 Clear-Host
 EXIT
