@@ -205,7 +205,11 @@ Do {
 							Do{
 								$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
 								If (!(Test-Path $newTarget)){Write-Host "$newTarget is not a valid path" -ForegroundColor Red}
-								Else {$global:path = $newTarget}
+								Else {
+									$global:path = $newTarget
+									$global:invalid = $true
+									Clear-Host
+								}
 							}While(!(Test-Path $newTarget))						
 						}
 						Else{
