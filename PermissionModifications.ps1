@@ -207,15 +207,10 @@ Do {
 							$Global:invalid = "False"
 						}
 						ElseIf($decision -eq '2'){
-							$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
-							If ((Test-Path $newTarget) -eq $true){
-								$Global:Path = $newTarget
-								$Global:invalid = "False"
-							}
-							Else{
-								Write-Host "Path was not found!" -ForegroundColor Red
-								$Global:invalid = "True"
-							}
+							Do{
+								$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
+								If (!(Test-Path $newTarget)){Write-Host "Path not found!" -ForegroundColor Red}
+							}While(!(Test-Path $newTarget))						
 						}
 						Else{
 							$Global:invalid = "True"
