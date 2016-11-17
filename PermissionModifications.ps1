@@ -2,7 +2,7 @@
 #
 # Ryan Wehe
 # ASU FSE
-# 11/10/2016
+# 11/17/2016
 ############################################################
 
 # Default directory to be scanned by the script
@@ -14,9 +14,9 @@ If (Test-Path $Path){
 }
 Else{
 	# The default path is not valid
-	Write-Host "$Path is not a valid path"
+	Write-Host "$Path is not a valid path" -ForegroundColor Red
 	$Global:Path = $null
-	$Global:PathDefault = $null
+	$Global:PathDefault = "Invalid"
 }
 
 
@@ -159,14 +159,9 @@ function createPermissionsFile{
 #Prompt for user selection
 #Loop back here if runStart -eq "y"
 Do {
-	Clear-Host
-	
+	Clear-Host	
 	If ($Path -ne $null){
-		If (Test-Path $Path){
-			
-
-			
-			
+		If (Test-Path $Path){			
 			#Loop back here if $invalid -eq "True"
 			Do{
 				If ($csvPath -ne $null){
@@ -197,7 +192,7 @@ Do {
 						Clear-Host
 						Write-Host "The default target is $PathDefault"
 
-						If (($Path -ne $PathDefault) -and ($PathDefault -ne $null)){
+						If (($Path -ne $PathDefault) -and ($PathDefault -ne "Invalid")){
 							Write-Host "1) Set back to default`n2) New target"
 							$decision = Read-Host -Prompt "1 or 2"
 						}Else{$decision = 2}
@@ -209,7 +204,8 @@ Do {
 						ElseIf($decision -eq '2'){
 							Do{
 								$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
-								If (!(Test-Path $newTarget)){Write-Host "Path not found!" -ForegroundColor Red}
+								If (!(Test-Path $newTarget)){Write-Host "$newTarget is not a valid path" -ForegroundColor Red}
+								Else {$global:path = $newTarget}
 							}While(!(Test-Path $newTarget))						
 						}
 						Else{
@@ -232,7 +228,8 @@ Do {
 					$newCSV = Read-Host "`nWould you like to create a new CSV file (Y,N)?"
 					If ($newCSV -eq "Y"){
 						createPermissionsFile
-						$Global:csvPath = "$pwd" + "\" + "$filename" + ".csv"			
+						$Global:csvPath = "$pwd" + "\" + "$filename" + ".csv"
+						Invoke-Item -Path $csvPath
 						$Global:invalid = "True"
 					}
 					Else{
@@ -256,22 +253,29 @@ Do {
 	}
 	Else{
 		Clear-Host
-		$global:path = Read-Host -Prompt "Enter a valid target path"
+		If ($PathDefault -eq "Invalid"){Write-Host "The default path you specified is not valid" -ForegroundColor Red}
+		If ($path -eq $null){Write-Host "The target path is not set" -ForegroundColor Red}
+		Else{Write-Host "$path is not a valid path" -ForegroundColor Red}
+		Do{
+			$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
+			If (!(Test-Path $newTarget)){Write-Host "$newTarget is not a valid path" -ForegroundColor Red}
+			Else {$global:path = $newTarget}
+		}While(!(Test-Path $newTarget))	
 		$global:runStart = "y"
-	}
-	
+	}	
 }While ($runStart -eq "Y")
 Clear-Host
 EXIT
 
 #####################################################################################################################################
 #														Sources:
+# SID_Query.ps1 by Brian Tancredi
+#
 # Add/remove NTFS Permissions Functions:
 # http://stackoverflow.com/questions/11465074/powershell-remove-all-permissions-on-a-directory-for-all-users
 #
 # Creating Permissions File:
 # http://stackoverflow.com/questions/35825648/list-all-folders-where-users-except-admin-have-allow-full-access
 # ANSVLANReport.ps1 by Thomas Lewis
-# SID_Query.ps1 by Brian Tancredi
 # https://phyllisinit.wordpress.com/2012/03/14/extracting-folder-and-subfolder-security-permission-properties-using-powershell/
 #####################################################################################################################################
