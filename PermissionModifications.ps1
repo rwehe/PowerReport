@@ -7,7 +7,17 @@
 
 # Default directory to be scanned by the script
 $Global:Path = "E:\Fulton"
-$Global:PathDefault = $Path
+
+If (Test-Path $Path){
+	# The default path is valid
+	$Global:PathDefault = $Path
+}
+Else{
+	# The default path is not valid
+	Write-Host "$Path is not a valid path"
+	$Global:Path = $null
+	$Global:PathDefault = $null
+}
 
 
 If (Test-Path "Folder_Permissions.csv"){
@@ -107,43 +117,43 @@ function ModifyPermissions{
 }
 
 function createPermissionsFile{
-	# Path to scan
-	If ($Global:path -eq $null){
-		$Global:Path = "E:\Fulton"
-	}
-	
-	Write-Host "Analyzing:" $path -BackgroundColor Black -ForegroundColor DarkGreen
+	If (Test-Path $path){
+		Write-Host "Analyzing:" $path -BackgroundColor Black -ForegroundColor DarkGreen
 
-	# How many child folders do you want to scan?
-	# 0 = Scan directorys only in the Path
-	# 1 = Scan 1 layer, 2 = 2 layers, etc.
-	$Depth = 0
+		# How many child folders do you want to scan?
+		# 0 = Scan directorys only in the Path
+		# 1 = Scan 1 layer, 2 = 2 layers, etc.
+		$Depth = 0
 
-	# To add datestamp to filename
-	#$DS = Get-Date -Format MM-dd-yyyy
+		# To add datestamp to filename
+		#$DS = Get-Date -Format MM-dd-yyyy
 
-	# Build Filename
-	$Global:Filename = "Folder_Permissions"
+		# Build Filename
+		$Global:Filename = "Folder_Permissions"
 
-	Get-ChildItem $Path -Directory | ForEach-Object {
-		$file = $_
-		
-		Get-Acl -Path $file.FullName |
-		Select-Object -ExpandProperty Access |
-		
-		ForEach-Object {
-			#ForEach ACL
-			New-object psobject -Property @{
-				Path = $file.FullName
-				IdentityReference = $_.IdentityReference
-				FileSystemRights = $_.FileSystemRights
-				#AccessControlType = $_.AccessControlType
-				Flagged = $false
-				InheritedFlag = $_.IsInherited
+		Get-ChildItem $Path -Directory | ForEach-Object {
+			$file = $_
+			
+			Get-Acl -Path $file.FullName |
+			Select-Object -ExpandProperty Access |
+			
+			ForEach-Object {
+				#ForEach ACL
+				New-object psobject -Property @{
+					Path = $file.FullName
+					IdentityReference = $_.IdentityReference
+					FileSystemRights = $_.FileSystemRights
+					#AccessControlType = $_.AccessControlType
+					Flagged = $false
+					InheritedFlag = $_.IsInherited
+				}
 			}
-		}
-	} | Select-Object -Property Path, IdentityReference, FileSystemRights, Flagged, InheritedFlag | Export-Csv -Path .\$Filename.csv -NoTypeInformation
-	Write-Host "Created file"$PWD"\"$Filename".csv" -BackgroundColor Black -ForegroundColor DarkGreen
+		} | Select-Object -Property Path, IdentityReference, FileSystemRights, Flagged, InheritedFlag | Export-Csv -Path .\$Filename.csv -NoTypeInformation
+		Write-Host "Created file"$PWD"\"$Filename".csv" -BackgroundColor Black -ForegroundColor DarkGreen
+	}
+	Else{
+		Write-Host "$path is not valid" -ForegroundColor Red
+	}
 }
 
 #Prompt for user selection
@@ -180,7 +190,7 @@ Do {
 				Clear-Host
 				Write-Host "The default target is $PathDefault"
 
-				If ($Path -ne $PathDefault){
+				If (($Path -ne $PathDefault) -and ($PathDefault -ne $null)){
 					Write-Host "1) Set back to default`n2) New target"
 					$decision = Read-Host -Prompt "1 or 2"
 				}Else{$decision = 2}
@@ -246,5 +256,6 @@ EXIT
 # Creating Permissions File:
 # http://stackoverflow.com/questions/35825648/list-all-folders-where-users-except-admin-have-allow-full-access
 # ANSVLANReport.ps1 by Thomas Lewis
+# SID_Query.ps1 by Brian Tancredi
 # https://phyllisinit.wordpress.com/2012/03/14/extracting-folder-and-subfolder-security-permission-properties-using-powershell/
 #####################################################################################################################################
