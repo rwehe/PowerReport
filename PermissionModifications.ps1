@@ -2,11 +2,11 @@
 #
 # Ryan Wehe
 # ASU FSE
-# 11/17/2016
+# 11/18/2016
 ############################################################
 
 # Default directory to be scanned by the script
-$Global:Path = "F:\Fulton"
+$Global:Path = "E:\Fulton"
 
 If (Test-Path $Path){
 	# The default path is valid
@@ -62,6 +62,26 @@ function AddNTFSPermissions($path, $object, $permission) {
 	Set-ACL $path -AclObject $DirectorySecurity
 }
 
+function comparePaths([string]$pathVariable,[string]$CSVfile){
+	#Get directory path from the first path in the CSV file
+	$CSVfilePath = (get-item (Import-Csv $CSVfile)[1].Path).parent.Fullname
+	Clear-Host
+	Write-Host "The current target differs from that referenced in $CSVfile." -BackgroundColor Yellow -ForegroundColor Red
+	Write-Host "Current target:....... $pathVariable" -BackgroundColor White -ForegroundColor Blue
+	Write-Host "Detected CSV target:.. $CSVfilePath" -BackgroundColor White -ForegroundColor Blue
+	Do{
+		Write-Host "Would you like to update the target path to $CSVfilePath ?" -BackgroundColor Black -ForegroundColor White
+		$choice = Read-Host -Prompt "`nWould you like to update to the detected CSV target path: $CSVfilePath (Y/N)?"
+		If ($choice -eq 'y'){
+			$Global:path = $CSVfilePath
+		}
+		ElseIf ($choice -eq 'n'){
+			Write-Host "Path remains $pathVariable"
+		}
+	}While($choice -ne 'y' -and $choice -ne 'n')
+	Clear-Host
+}
+
 function ModifyPermissions{
 	$rowCount = 1 # Starts at 1 due to headers line
 	$flaggedrowCount = 0
@@ -88,12 +108,12 @@ function ModifyPermissions{
 				$tempACL | Select -ExpandProperty Access | 
 				
 				%{if ($_.IdentityReference -eq $IdentityReference){
-					Write-Host "Removing" $_.IdentityReference "from" $pathToModify -BackgroundColor Red -ForegroundColor Black
+					Write-Host "Removing" $_.IdentityReference "from" $pathToModify -BackgroundColor DarkGray -ForegroundColor White
 					RemoveNTFSPermissions $pathToModify $_.FileSystemRights $_.AccessControlType $_.IdentityReference $_.InheritanceFlags $_.PropagationFlags				
 				 }
 				}			
 				AddNTFSPermissions $pathToModify $IdentityReference $FileSystemRights
-				Write-Host "ACL Modified - Row:"$rowCount "| Path:" $pathToModify "| IdentityReference:" $IdentityReference "| FileSystemRights:" $FileSystemRights "| Access Control Type:" $accessControlType -BackgroundColor White -ForegroundColor Cyan
+				Write-Host "ACL Modified - Row:"$rowCount "| Path:" $pathToModify "| IdentityReference:" $IdentityReference "| FileSystemRights:" $FileSystemRights "| Access Control Type:" $accessControlType -BackgroundColor DarkGray -ForegroundColor White
 				
 				$flaggedrowCount = ($flaggedrowCount+1)
 			}
@@ -113,7 +133,8 @@ function ModifyPermissions{
 			$unflaggedrowCount = ($unflaggedrowCount+1)
 		}
 	}
-	Write-Host $flaggedrowCount "flagged |" $unflaggedrowCount "not flagged |" $removerowCount "removed |" $errorCount "errors"
+	Write-Host "$flaggedrowCount flagged | $unflaggedrowCount not flagged | $removerowCount removed | " -NoNewline
+	Write-Host "$errorCount errors" -ForegroundColor Red -NoNewline
 }
 
 function createPermissionsFile{
@@ -165,6 +186,8 @@ Do {
 			#Loop back here if $invalid -eq "True"
 			Do{
 				If ($csvPath -ne $null){
+					#Test if CSV target differs from the current target
+					If($path -ne ((Get-Item (Import-Csv $csvPath)[1].Path).parent.Fullname)){comparePaths $path $csvPath}
 					Write-Host "`nThe current CSV file is: $csvPath" -ForegroundColor Black -BackgroundColor White
 					Write-Host "The target path is: $Path" -ForegroundColor Black -BackgroundColor White
 					Write-Host "`nSelect your inquiry..." -ForegroundColor Yellow
@@ -180,9 +203,10 @@ Do {
 					$select = Read-Host -Prompt "`nSelect 1, 2 or 3"
 					
 					If ($select -eq '1'){
+						Clear-Host
 						createPermissionsFile
 						Invoke-Item -Path .\$Filename.csv
-						$Global:invalid = "False"
+						$Global:invalid = "True"
 					}
 					ElseIf ($select -eq '2'){
 						ModifyPermissions
@@ -261,9 +285,29 @@ Do {
 		If ($path -eq $null){Write-Host "The target path is not set" -ForegroundColor Red}
 		Else{Write-Host "$path is not a valid path" -ForegroundColor Red}
 		Do{
-			$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
-			If (!(Test-Path $newTarget)){Write-Host "$newTarget is not a valid path" -ForegroundColor Red}
-			Else {$global:path = $newTarget}
+			# Attempt to get a target from the current CSV
+			If ($csvPath -ne $null){
+				If(Test-Path $csvPath){
+					$CSVfilePath = (get-item (Import-Csv $csvPath)[1].Path).parent.Fullname
+					If (Test-Path $CSVfilePath){
+						Write-Host "The path $CSVfilePath was detected."
+						$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target, or press 1 to set $CSVfilePath"
+						If ($newTarget -eq '1'){
+							$newTarget = $CSVfilePath
+							$global:path = $CSVfilePath
+						}
+						Else{
+							If (!(Test-Path $newTarget)){Write-Host "$newTarget is not a valid path" -ForegroundColor Red}
+							Else {$global:path = $newTarget}
+						}
+					} # Test to the CSV's target failed
+				} # Test to CSV file failed
+			} # Failed due to null CSV Path
+			Else{
+				$newTarget = Read-Host -Prompt "`nEnter a new directory for script to target"
+				If (!(Test-Path $newTarget)){Write-Host "$newTarget is not a valid path" -ForegroundColor Red}
+				Else {$global:path = $newTarget}
+			}
 		}While(!(Test-Path $newTarget))	
 		$global:runStart = "y"
 	}	
@@ -274,6 +318,8 @@ EXIT
 #####################################################################################################################################
 #														Sources:
 # SID_Query.ps1 by Brian Tancredi
+#
+# http://stackoverflow.com/questions/9725521/how-to-get-the-parents-parent-directory-in-powershell#9725667
 #
 # Add/remove NTFS Permissions Functions:
 # http://stackoverflow.com/questions/11465074/powershell-remove-all-permissions-on-a-directory-for-all-users
