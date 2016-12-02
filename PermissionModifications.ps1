@@ -1,9 +1,23 @@
-############################################################
-#
-# Ryan Wehe
-# ASU FSE
-# 11/18/2016
-############################################################
+<#
+.SYNOPSIS
+*This script has two primary functions. 
+	- It will scan all subfolders of the target directory to generate a CSV report listing each user/group (IdentityReference), their NTFS Permissions on the file (FileSystemRights), and if that permission is Inherited or not (InheritedFlag). 
+	- The second function of the script is to read in the CSV file and update (modify/remove) the users/groups permissions to reflect the CSV file.
+
+.DESCRIPTION
+*If you plan to run the script with the same target folder often, update the first variable ($Global:Path) to the path that you’ll primarily be targeting (not mandatory but recommend to save time).
+*Change directory into the location where Folder_Permissions.csv is located or to the location that you’d like it to be created. The script will create a new CSV file in the location that you’ve run the script if there wasn’t one found.
+*The script will first ensure that the target directory is valid. If the hard-coded path variable is not valid you will be prompted to set a correct target path.
+*When a new CSV file gets created it will automatically open.
+
+.NOTES
+	File Name: PermissionModifications.ps1
+	Author: Ryan Wehe – rwehe@asu.edu
+	Organization: Arizona State University – ETS
+.EXAMPLE
+(CD into the location where Folder_Permissions.csv is located or to the location that you’d like it to be created.)
+	.\<path to script>\PermissionModifications.ps1
+#>
 
 # Default directory to be scanned by the script
 $Global:Path = "E:\Fulton"
